@@ -20,7 +20,7 @@ Eine leichtgewichtige, webbasierte Anwendung zur Erfassung und Verwaltung von Ma
 ## Installation & Struktur
 
 1. Kopiere die Projektdateien auf deinen Webserver.
-2. Stelle sicher, dass der Webserver Schreibrechte im Projektordner besitzt, um die `liste_daten.json` anzulegen.
+2. Stelle sicher, dass der Webserver Schreibrechte im `src/`-Verzeichnis besitzt, damit das Unterverzeichnis `data/` und die JSON-Dateien automatisch angelegt werden können.
 
 ## Docker
 ```text
@@ -30,7 +30,13 @@ docker compose up -d
 
 **Verzeichnisstruktur:**
 ```text
-├── index.php             # Hauptanwendung (Frontend & Backend-Logik)
-├── liste_daten.json      # Automatisch generierte Datenbank (JSON)
-├── barcode.webp          # Icon für die Scan-Buttons und das Favicon
-└── beep.ogg              # (Optional) Audio-Feedback für den Scanner
+├── src/
+│   ├── index.php             # Hauptanwendung (Frontend & Backend-Logik)
+│   ├── barcode.webp          # Icon für die Scan-Buttons und das Favicon
+│   ├── beep.ogg              # (Optional) Audio-Feedback für den Scanner
+│   └── data/                 # Automatisch generiertes Datenverzeichnis
+│       ├── liste_daten.json  # Standard-Liste (kein Listenname gesetzt)
+│       └── <name>_daten.json # Benannte Listen (z. B. lager_daten.json)
+├── docker/
+│   └── Dockerfile
+└── docker-compose.yml
