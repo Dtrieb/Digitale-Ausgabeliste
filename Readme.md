@@ -2,6 +2,8 @@
 
 Eine leichtgewichtige, webbasierte Anwendung zur Erfassung und Verwaltung von Materialausgaben. Das System unterstützt die Barcode- und QR-Code-Erfassung direkt über die Kamera eines Smartphones oder Tablets und speichert alle Daten performant in einer lokalen JSON-Datei.
 
+![Screenshot](images/screenshot.png)
+
 ## Features
 
 * **Barcode & QR-Code Scanner:** Integrierte Scan-Funktion (via `html5-qrcode`) für Materialien, Personennamen oder Suchbegriffe.
