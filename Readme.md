@@ -42,3 +42,9 @@ docker compose up -d
 ├── docker/
 │   └── Dockerfile
 └── docker-compose.yml
+
+## Programmiert von:
+
+- 👤**Dtrieb** - https://www.github.com/dtrieb
+- 👤**dieterthiess**  - https://www.github.com/dieterthiess
+- und Gemini & Claude Code
