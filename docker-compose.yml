@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: digitale-ausgabeliste
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      # Schaltet das Caching im Image ab, damit PHP-Änderungen SOFORT sichtbar sind
+      - ERRORS=1
+      - OPCACHE_MODE=disabled

@@ -22,6 +22,12 @@ Eine leichtgewichtige, webbasierte Anwendung zur Erfassung und Verwaltung von Ma
 1. Kopiere die Projektdateien auf deinen Webserver.
 2. Stelle sicher, dass der Webserver Schreibrechte im Projektordner besitzt, um die `liste_daten.json` anzulegen.
 
+## Docker
+```text
+docker compose up -d
+```
+
+
 **Verzeichnisstruktur:**
 ```text
 ├── index.php             # Hauptanwendung (Frontend & Backend-Logik)
