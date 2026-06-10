@@ -46,6 +46,6 @@ docker compose up -d
 
 ## Programmiert von:
 
-- 👤**Dtrieb** - [https://www.github.com/dtrieb]
-- 👤**dieterthiess**  - [https://www.github.com/dieterthiess]
-- und Gemini & Claude Code
+- 👤**Dtrieb** - [https://www.github.com/dtrieb](https://www.github.com/dtrieb)
+- 👤**dieterthiess**  - [https://www.github.com/dieterthiess](https://www.github.com/dieterthiess)
+- 👤**Gemini & Claude Code**
