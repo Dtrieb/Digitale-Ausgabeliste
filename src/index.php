@@ -182,15 +182,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin: 8mm 8mm 8mm 8mm; /* Etwas kompakterer Rand */
     }
 
-    /* Radikaler Schutz gegen leere Folgeseiten auf Smartphones */
     html, body {
         background: white !important;
         color: black !important;
         padding: 0 !important;
         margin: 0 !important;
         font-size: 11px !important;
-        max-height: 100vh !important; /* Verhindert, dass der Inhalt über eine Seite hinausragt */
-        overflow: hidden !important;   /* Schneidet unsichtbare Geister-Abstände rigoros ab */
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     /* Neutralisiert den umschließenden weißen Kasten komplett für den Druck */
@@ -199,6 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         box-shadow: none !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: visible !important;
+        max-width: none !important;
     }
 
     /* Bedienelemente ausblenden */
