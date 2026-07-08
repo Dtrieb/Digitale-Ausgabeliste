@@ -242,10 +242,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         font-size: 11px !important;
         line-height: 1.3 !important;
         word-wrap: break-word !important;
+        color: black !important;
+        font-weight: normal !important;
+        font-family: Arial, sans-serif !important;
     }
     .custom-table th {
         background-color: #e5e7eb !important;
         border-bottom: 2px solid #666 !important;
+        font-weight: bold !important;
     }
 
     /* Breitensteuerung für die 4 Spalten im Druck */
