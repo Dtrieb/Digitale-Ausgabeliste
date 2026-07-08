@@ -249,10 +249,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     /* Breitensteuerung für die 4 Spalten im Druck */
-    .col-name { width: 32% !important; }
-    .col-material { width: 32% !important; }
-    .col-ausgabe { width: 18% !important; }
-    .col-rueckgabe { width: 18% !important; }
+    .col-name { width: 24% !important; }
+    .col-material { width: 24% !important; }
+    .col-ausgabe { width: 26% !important; }
+    .col-rueckgabe { width: 26% !important; }
+
+    /* Keine Umbrüche in Datum-Zellen und Spaltenköpfen */
+    .custom-table th,
+    .clv-datum,
+    .clv-rueckgabe {
+        white-space: nowrap !important;
+    }
 
     /* Spalte Löschen im Druck verstecken */
     .col-delete, .cell-delete {
