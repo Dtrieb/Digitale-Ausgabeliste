@@ -32,6 +32,13 @@ if (file_exists($dataFile)) {
     $eintraege = json_decode(file_get_contents($dataFile), true) ?? [];
 }
 
+// Material-Vorschläge laden
+$materialSuggestions = [];
+$materialFile = __DIR__ . '/material.json';
+if (file_exists($materialFile)) {
+    $materialSuggestions = json_decode(file_get_contents($materialFile), true) ?? [];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $input = json_decode(file_get_contents('php://input'), true);
@@ -95,6 +102,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($found) {
                 file_put_contents($dataFile, json_encode($eintraege));
                 echo json_encode(['success' => true]);
+                exit;
+            }
+        } elseif ($input['action'] === 'return_by_id') {
+            $targetId = $input['id'] ?? '';
+            $found = false;
+            $updatedEintrag = null;
+
+            foreach ($eintraege as $index => $eintrag) {
+                $currentId = $eintrag['id'] ?? (string)$index;
+                if ($currentId === $targetId) {
+                    $eintraege[$index]['rueckgabe'] = date('d.m.Y - H:i');
+                    $updatedEintrag = $eintraege[$index];
+                    $found = true;
+                    break;
+                }
+            }
+
+            if ($found) {
+                file_put_contents($dataFile, json_encode($eintraege));
+                echo json_encode(['success' => true, 'eintrag' => $updatedEintrag]);
+                exit;
+            } else {
+                echo json_encode(['success' => false]);
                 exit;
             }
         } elseif ($input['action'] === 'return') {
@@ -179,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 @media print {
     @page {
         size: A4 portrait;
-        margin: 8mm 8mm 8mm 8mm; /* Etwas kompakterer Rand */
+        margin: 8mm 8mm 8mm 8mm;
     }
 
     html, body {
@@ -194,7 +224,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         overflow: visible !important;
     }
 
-    /* Neutralisiert den umschließenden weißen Kasten komplett für den Druck */
     .max-w-4xl {
         display: contents !important;
         box-shadow: none !important;
@@ -210,14 +239,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     #print_title {
-    display: block !important;
-    font-size: 20px !important;
-    font-weight: bold !important;
-    text-align: center !important;
-    margin: 5px 0 15px 0 !important;
-    color: black !important;
-    border-bottom: 2px solid #333 !important;
-    padding-bottom: 5px !important;
+        display: block !important;
+        font-size: 20px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin: 5px 0 15px 0 !important;
+        color: black !important;
+        border-bottom: 2px solid #333 !important;
+        padding-bottom: 5px !important;
     }
 
     .table-container {
@@ -229,7 +258,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         width: 100% !important;
     }
 
-    /* Echte Tabellen-Druck-Absicherung */
     .custom-table {
         border-collapse: collapse !important;
         width: 99.5% !important;
@@ -252,21 +280,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         font-weight: bold !important;
     }
 
-    /* Breitensteuerung für die 4 Spalten im Druck */
     .col-name { width: 24% !important; }
     .col-material { width: 24% !important; }
     .col-ausgabe { width: 26% !important; }
     .col-rueckgabe { width: 26% !important; }
 
-    /* Keine Umbrüche in Datum-Zellen und Spaltenköpfen */
     .custom-table th,
     .clv-datum,
     .clv-rueckgabe {
         white-space: nowrap !important;
     }
 
-    /* Spalte Löschen im Druck verstecken */
-    .col-delete, .cell-delete {
+    .col-delete, .cell-delete, .col-rueckgabe-btn, .cell-return-btn {
         display: none !important;
     }
 
@@ -283,7 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 #print_title {
-display: none;
+    display: none;
 }
 </style>
 </head>
@@ -327,7 +352,12 @@ Datei: <span id="info_dateiname" class="font-mono"><?php echo htmlspecialchars(b
 <div>
 <label class="block text-sm font-medium text-gray-700 mb-1">Material</label>
 <div class="flex gap-2">
-<input type="text" id="txt_material" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="z.B. Schlüssel">
+<input type="text" id="txt_material" list="material_liste" autocomplete="off" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="z.B. Schlüssel">
+<datalist id="material_liste">
+<?php foreach ($materialSuggestions as $mat): ?>
+    <option value="<?php echo htmlspecialchars($mat); ?>"></option>
+<?php endforeach; ?>
+</datalist>
 <button type="button" class="btn-scan p-2 bg-gray-200 hover:bg-gray-300 rounded-md transition flex items-center justify-center cursor-pointer" data-target="txt_material" title="Barcode/QR-Code scannen">
 <img src="barcode.webp" alt="Scan" class="w-6 h-6 object-contain">
 </button>
@@ -367,7 +397,8 @@ Zurückgegebene ausblenden
 </span>
 </label>
 <div class="flex gap-2">
-<input type="text" id="txt_rueckgabe" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" placeholder="Datum, Name oder Material">
+<input type="text" id="txt_rueckgabe" list="rueckgabe_liste" autocomplete="off" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" placeholder="Datum, Name oder Material">
+<datalist id="rueckgabe_liste"></datalist>
 <button type="button" class="btn-scan p-2 bg-gray-200 hover:bg-gray-300 rounded-md transition flex items-center justify-center cursor-pointer" data-target="txt_rueckgabe" title="Barcode/QR-Code scannen">
 <img src="barcode.webp" alt="Scan" class="w-6 h-6 object-contain">
 </button>
@@ -389,6 +420,7 @@ Zurückgegebene ausblenden
 <div class="flex justify-between items-center gap-1"><span>Ausgabe (Datum/Zeit)</span><span class="sort-icon text-xs text-gray-600"></span></div>
 </th>
 <th class="col-rueckgabe text-left text-sm font-bold select-none">Rückgabe (Datum/Zeit)</th>
+<th class="col-rueckgabe-btn text-center text-sm font-bold select-none w-[50px]">Rückgabe</th>
 <th class="col-delete text-center text-sm font-bold select-none w-[65px]">Löschen</th>
 </tr>
 </thead>
@@ -402,6 +434,13 @@ $istZurueckgegeben = isset($eintrag['rueckgabe']) && $eintrag['rueckgabe'] !== '
 <td class="text-gray-600 text-xs md:text-sm clv-material break-words"><?php echo htmlspecialchars($eintrag['material']); ?></td>
 <td class="text-gray-600 font-mono text-xs md:text-sm clv-datum"><?php echo htmlspecialchars($eintrag['datum'] ?? '-'); ?></td>
 <td class="clv-rueckgabe font-mono text-xs md:text-sm <?php echo $istZurueckgegeben ? 'text-green-600 font-medium' : 'text-gray-400'; ?>"><?php echo htmlspecialchars($eintrag['rueckgabe'] ?? '-'); ?></td>
+<td class="cell-return-btn text-center text-sm md:text-base p-2">
+    <?php if (!$istZurueckgegeben): ?>
+        <button type="button" class="btn-return-click text-emerald-600 hover:text-emerald-800 font-bold transition cursor-pointer select-none" title="Als zurückgegeben markieren">↩️</button>
+    <?php else: ?>
+        <span class="text-green-600 font-bold">✓</span>
+    <?php endif; ?>
+</td>
 <td class="cell-delete text-red-600 font-bold text-center text-sm md:text-base hover:bg-red-50 transition cursor-pointer select-none">&times;</td>
 </tr>
 <?php endforeach; ?>
@@ -443,6 +482,30 @@ const beepSound = new Audio('beep.ogg');
 
 txtMaterial.focus();
 
+// Sammelt NUR Materialien von noch nicht zurückgegebenen Einträgen
+function updateRueckgabeVorschlaege() {
+    const datalist = document.getElementById('rueckgabe_liste');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    
+    const vorschlaege = new Set();
+    document.querySelectorAll('.clv-item:not(.clv-item-returned)').forEach(item => {
+        const materialText = item.querySelector('.clv-material').textContent.trim();
+        if(materialText) vorschlaege.add(materialText);
+    });
+    
+    Array.from(vorschlaege).sort().forEach(wert => {
+        const option = document.createElement('option');
+        option.value = wert;
+        datalist.appendChild(option);
+    });
+}
+
+// Vorschläge beim Start aufbauen
+document.addEventListener('DOMContentLoaded', () => {
+    updateRueckgabeVorschlaege();
+});
+
 btnPrintPdf.addEventListener('click', () => {
     window.print();
 });
@@ -480,7 +543,7 @@ txtListenname.addEventListener('keydown', (e) => {
 btnClearName.addEventListener('click', () => {
     if (confirm('Listenname löschen? Die gespeicherten Daten bleiben erhalten.')) {
         txtListenname.value = '';
-saveListenname('');
+        saveListenname('');
     }
 });
 
@@ -489,17 +552,23 @@ function renderListe(eintraege) {
     eintraege.forEach(eintrag => {
         const item = document.createElement('tr');
         const istZurueckgegeben = eintrag.rueckgabe && eintrag.rueckgabe !== '-';
-    item.className = `clv-item ${istZurueckgegeben ? 'clv-item-returned' : ''} transition`;
-    item.setAttribute('data-id', eintrag.id);
-    item.innerHTML = `
-    <td class="p-3 font-medium text-gray-900 text-xs md:text-sm clv-name break-words">${escapeHtml(eintrag.name)}</td>
-    <td class="p-3 text-gray-600 text-xs md:text-sm clv-material break-words">${escapeHtml(eintrag.material)}</td>
-    <td class="p-3 text-gray-600 font-mono text-xs md:text-sm clv-datum">${escapeHtml(eintrag.datum ?? '-')}</td>
-    <td class="p-3 clv-rueckgabe font-mono text-xs md:text-sm ${istZurueckgegeben ? 'text-green-600 font-medium' : 'text-gray-400'}">${escapeHtml(eintrag.rueckgabe ?? '-')}</td>
-    <td class="cell-delete p-3 text-red-600 font-bold text-center text-sm md:text-base hover:bg-red-50 transition cursor-pointer select-none">&times;</td>
-    `;
-    clvListe.appendChild(item);
+        item.className = `clv-item ${istZurueckgegeben ? 'clv-item-returned' : ''} transition`;
+        item.setAttribute('data-id', eintrag.id);
+        item.innerHTML = `
+        <td class="p-3 font-medium text-gray-900 text-xs md:text-sm clv-name break-words">${escapeHtml(eintrag.name)}</td>
+        <td class="p-3 text-gray-600 text-xs md:text-sm clv-material break-words">${escapeHtml(eintrag.material)}</td>
+        <td class="p-3 text-gray-600 font-mono text-xs md:text-sm clv-datum">${escapeHtml(eintrag.datum ?? '-')}</td>
+        <td class="p-3 clv-rueckgabe font-mono text-xs md:text-sm ${istZurueckgegeben ? 'text-green-600 font-medium' : 'text-gray-400'}">${escapeHtml(eintrag.rueckgabe ?? '-')}</td>
+        <td class="cell-return-btn text-center text-sm md:text-base p-2">
+            ${!istZurueckgegeben 
+                ? '<button type="button" class="btn-return-click text-emerald-600 hover:text-emerald-800 font-bold transition cursor-pointer select-none" title="Als zurückgegeben markieren">↩️</button>' 
+                : '<span class="text-green-600 font-bold">✓</span>'}
+        </td>
+        <td class="cell-delete p-3 text-red-600 font-bold text-center text-sm md:text-base hover:bg-red-50 transition cursor-pointer select-none">&times;</td>
+        `;
+        clvListe.appendChild(item);
     });
+    updateRueckgabeVorschlaege();
 }
 
 txtMaterial.addEventListener('keydown', (e) => {
@@ -537,38 +606,74 @@ btnHinzufuegen.addEventListener('click', async (e) => {
     if (result.success) {
         const newItem = document.createElement('tr');
         const istZurueckgegeben = result.eintrag.rueckgabe && result.eintrag.rueckgabe !== '-';
-newItem.className = `clv-item ${istZurueckgegeben ? 'clv-item-returned' : ''} transition`;
-newItem.setAttribute('data-id', result.eintrag.id);
-newItem.innerHTML = `
-<td class="p-3 font-medium text-gray-900 text-xs md:text-sm clv-name break-words">${escapeHtml(result.eintrag.name)}</td>
-<td class="p-3 text-gray-600 text-xs md:text-sm clv-material break-words">${escapeHtml(result.eintrag.material)}</td>
-<td class="p-3 text-gray-600 font-mono text-xs md:text-sm clv-datum">${escapeHtml(result.eintrag.datum)}</td>
-<td class="p-3 clv-rueckgabe font-mono text-xs md:text-sm text-gray-400">${escapeHtml(result.eintrag.rueckgabe ?? '-')}</td>
-<td class="cell-delete p-3 text-red-600 font-bold text-center text-sm md:text-base hover:bg-red-50 transition cursor-pointer select-none">&times;</td>
-`;
-clvListe.appendChild(newItem);
+        newItem.className = `clv-item ${istZurueckgegeben ? 'clv-item-returned' : ''} transition`;
+        newItem.setAttribute('data-id', result.eintrag.id);
+        newItem.innerHTML = `
+        <td class="p-3 font-medium text-gray-900 text-xs md:text-sm clv-name break-words">${escapeHtml(result.eintrag.name)}</td>
+        <td class="p-3 text-gray-600 text-xs md:text-sm clv-material break-words">${escapeHtml(result.eintrag.material)}</td>
+        <td class="p-3 text-gray-600 font-mono text-xs md:text-sm clv-datum">${escapeHtml(result.eintrag.datum)}</td>
+        <td class="p-3 clv-rueckgabe font-mono text-xs md:text-sm text-gray-400">${escapeHtml(result.eintrag.rueckgabe ?? '-')}</td>
+        <td class="cell-return-btn text-center text-sm md:text-base p-2">
+            <button type="button" class="btn-return-click text-emerald-600 hover:text-emerald-800 font-bold transition cursor-pointer select-none" title="Als zurückgegeben markieren">↩️</button>
+        </td>
+        <td class="cell-delete p-3 text-red-600 font-bold text-center text-sm md:text-base hover:bg-red-50 transition cursor-pointer select-none">&times;</td>
+        `;
+        clvListe.appendChild(newItem);
 
-txtMaterial.value = "";
-txtName.value = "";
-txtMaterial.focus();
+        txtMaterial.value = "";
+        txtName.value = "";
+        txtMaterial.focus();
 
-txtSuche.value = "";
-txtSuche.dispatchEvent(new Event('input'));
-txtRueckgabe.value = "";
+        txtSuche.value = "";
+        txtSuche.dispatchEvent(new Event('input'));
+        txtRueckgabe.value = "";
 
-if (aktuelleSortierung.spalte) {
-    sortiereListe(aktuelleSortierung.spalte, aktuelleSortierung.aufsteigend);
-}
+        if (aktuelleSortierung.spalte) {
+            sortiereListe(aktuelleSortierung.spalte, aktuelleSortierung.aufsteigend);
+        }
+
+        updateRueckgabeVorschlaege();
     }
 });
 
 clvListe.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('cell-delete')) {
-        const targetRow = e.target.closest('.clv-item');
-        if (!targetRow) return;
-        const id = targetRow.getAttribute('data-id');
-        if (!id) return;
+    const targetRow = e.target.closest('.clv-item');
+    if (!targetRow) return;
+    const id = targetRow.getAttribute('data-id');
+    if (!id) return;
 
+    // Rückgabe per Klick
+    if (e.target.classList.contains('btn-return-click')) {
+        const response = await fetch('index.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'return_by_id', id: id })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            targetRow.classList.add('clv-item-returned');
+            
+            const rueckgabeZelle = targetRow.querySelector('.clv-rueckgabe');
+            if (rueckgabeZelle) {
+                rueckgabeZelle.textContent = result.eintrag.rueckgabe;
+                rueckgabeZelle.classList.remove('text-gray-400');
+                rueckgabeZelle.classList.add('text-green-600', 'font-medium');
+            }
+
+            const btnZelle = targetRow.querySelector('.cell-return-btn');
+            if (btnZelle) {
+                btnZelle.innerHTML = '<span class="text-green-600 font-bold">✓</span>';
+            }
+
+            bekaempfeSuche();
+            updateRueckgabeVorschlaege();
+        }
+        return;
+    }
+
+    // Löschen per Klick
+    if (e.target.classList.contains('cell-delete')) {
         if (confirm("Soll der ausgewählte Eintrag gelöscht werden?")) {
             const response = await fetch('index.php', {
                 method: 'POST',
@@ -579,6 +684,7 @@ clvListe.addEventListener('click', async (e) => {
             const result = await response.json();
             if (result.success) {
                 targetRow.remove();
+                updateRueckgabeVorschlaege();
             }
         }
     }
@@ -670,10 +776,16 @@ txtRueckgabe.addEventListener('keydown', async (e) => {
                     rueckgabeZelle.classList.remove('text-gray-400');
                     rueckgabeZelle.classList.add('text-green-600', 'font-medium');
                 }
+                const btnZelle = item.querySelector('.cell-return-btn');
+                if (btnZelle) {
+                    btnZelle.innerHTML = '<span class="text-green-600 font-bold">✓</span>';
+                }
             }
             txtRueckgabe.value = '';
-bekaempfeSuche();
-txtMaterial.focus();
+            bekaempfeSuche();
+            txtMaterial.focus();
+            
+            updateRueckgabeVorschlaege();
         } else {
             alert('Kein passender, offener Eintrag gefunden.');
         }
@@ -689,14 +801,14 @@ function sortiereListe(spaltenKlasse, aufsteigend) {
         const elB = b.querySelector('.' + spaltenKlasse);
 
         let textA = elA ? elA.textContent.trim() : '';
-    let textB = elB ? elB.textContent.trim() : '';
+        let textB = elB ? elB.textContent.trim() : '';
 
-    if (spaltenKlasse === 'clv-datum') {
-        textA = konvertiereDatumFuerSortierung(textA);
-        textB = konvertiereDatumFuerSortierung(textB);
-    }
+        if (spaltenKlasse === 'clv-datum') {
+            textA = konvertiereDatumFuerSortierung(textA);
+            textB = konvertiereDatumFuerSortierung(textB);
+        }
 
-    return aufsteigend ? textA.localeCompare(textB) : textB.localeCompare(textA);
+        return aufsteigend ? textA.localeCompare(textB) : textB.localeCompare(textA);
     });
 
     items.forEach(item => clvListe.appendChild(item));
